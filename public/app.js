@@ -16,7 +16,7 @@ document.addEventListener("alpine:init", () => {
         reg_number: ''
       },
   
-      fetchCars() {
+      showCars() {
         axios.get(`/api/cars`)
           .then(response => {
             this.cars = response.data;
