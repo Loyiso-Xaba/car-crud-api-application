@@ -1,103 +1,81 @@
-document.addEventListener("alpine:init", () => {
-    Alpine.data('popularMake', () => ({
-      cars: [],
-      popularMake: '',
-      addMessage: '',
-      addMessageType: '',
-      deleteMessage: '',
-      deleteMessageType: '',
-      newCar: {
-        color: '',
-        make: '',
-        model: '',
-        reg_number: ''
-      },
-      deleteCar: {
-        reg_number: ''
-      },
+document.addEventListener('alpine:init', () => {
+    Alpine.data('carManager', () => ({
+        cars: [],
+        popularCar: null,
+        newCar: { reg_number: '', make: '', model: '' },
+        selectedCar: null, // Track the car currently being edited
   
-      showCars() {
-        axios.get(`/api/cars`)
-          .then(response => {
-            this.cars = response.data;
-          })
-      },
+        init() {
+            this.fetchPopularCar();
+            this.fetchCars();
+        },
   
-      findMostPopularCar() {
-        axios.get(`/api/popular-car`)
-          .then(response => {
-            this.popularMake = response.data.mostPopularCar;
-            setTimeout(() => {
-              this.popularMake = null;
-            }, 5000);
-          })
-      },
+        async fetchPopularCar() {
+            try {
+                const response = await fetch('http://localhost:4020/api/popular-car');
+                this.popularCar = await response.json();
+            } catch (error) {
+                console.error('Error fetching popular car:', error);
+            }
+        },
   
-      addNewCar() {
-        if (!this.newCar.color || !this.newCar.make || !this.newCar.model || !this.newCar.reg_number) {
-          this.addMessage = 'Required to fill all fields!';
-          this.addMessageType = 'error';
-          this.clearAddMessage();
-          return;
-        }
+        async fetchCars() {
+            try {
+                const response = await fetch('http://localhost:4020/api/cars');
+                this.cars = await response.json();
+            } catch (error) {
+                console.error('Error fetching cars:', error);
+            }
+        },
   
-        const existingCar = this.cars.find(car => car.reg_number === this.newCar.reg_number);
-        if (existingCar) {
-          this.addMessage = 'Duplication of Registration number denied!';
-          this.addMessageType = 'error';
-          this.clearMessage();
-          return;
-        }
+        async deleteCar(reg_number) {
+            try {
+                await fetch(`http://localhost:4020/api/cars/${reg_number}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                this.fetchCars(); // Refresh the car list after deletion
+            } catch (error) {
+                console.error('Error deleting car:', error);
+            }
+        },
   
-        axios.post(`/api/cars`, this.newCar)
-          .then(response => {
-            this.cars.push(response.data);
-            this.addMessage = 'New car has been successfully added!';
-            this.addMessageType = 'success';
-            this.newCar = { color: '', make: '', model: '', reg_number: '' };
-            this.clearAddMessage();
-          })
-          .catch(error => {
-            this.addMessage = 'Car Addition failed!';
-            this.addMessageTypeessageType = 'error';
-            this.clearAddMessage();
-          });
-      },
+        async addCar() {
+            try {
+                await fetch('http://localhost:4020/api/cars', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.newCar)
+                });
+                this.fetchCars(); // Refresh the car list after adding a new car
+                this.newCar = { reg_number: '', make: '', model: '' }; // Clear the form
+            } catch (error) {
+                console.error('Error adding car:', error);
+            }
+        },
   
-      deleteCarEntry() {
-        axios.delete(`/api/cars/${this.deleteCar.reg_number}`)
-            .then(response => {
-                if (response.data.message === 'Car deletion  successful!') {
-                    this.cars = this.cars.filter(car => car.reg_number !== this.deleteCar.reg_number);
-                    this.deleteMessage = 'Car deletion  successful!'
-                    this.deleteMessageType = 'success';
-                    this.deleteCar.reg_number = '';
-                } else if (response.data.message === 'Requested car not available') {
-                    this.deleteMessage = 'Provided car detailing inaccurate!';
-                    this.deleteMessageType = 'error';
-                }
-                this.clearDeleteMessage();
-            })
-            .catch(error => {
-                console.error(error);
-                this.deleteMessage = 'Input Registration Identifier.';
-                this.deleteMessageType = 'error';
-                this.clearDeleteMessage();
-            });
-    },
+        async updateCar() {
+            if (!this.selectedCar) {
+                console.error('No car selected for update');
+                return;
+            }
+            try {
+                await fetch(`http://localhost:4020/api/cars/${this.selectedCar.reg_number}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.selectedCar)
+                });
+                this.fetchCars(); // Refresh the car list after updating
+                this.selectedCar = null; // Clear the selected car
+            } catch (error) {
+                console.error('Error updating car:', error);
+            }
+        },
   
-      clearAddMessage() {
-        setTimeout(() => {
-            this.addMessage = '';
-            this.addMessageType = '';
-        }, 5000);
-    },
+        selectCar(car) {
+            this.selectedCar = { ...car }; // Create a copy of the car to be edited
+        },
   
-    clearDeleteMessage() {
-        setTimeout(() => {
-            this.deleteMessage = '';
-            this.deleteMessageType = '';
-        }, 5000);
-    }
     }));
   });
+  

@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { mostPopularCar } from './mostPupularCar.js';
-import {cars} from './carmanagement.js'
+import {cars} from './carmanagement.js';
 
 
 const PORT = process.env.PORT || 4020;
